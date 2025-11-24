@@ -1,267 +1,329 @@
-/* --- 1. Reset and Global --- */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+/* --- CORE VARIABLES --- */
+:root {
+    --primary: #111827;
+    --primary-hover: #374151;
+    --accent: #4f46e5;
+    --bg: #f3f4f6;
+    --surface: #ffffff;
+    --text: #1f2937;
+    --text-light: #6b7280;
+    --border: #e5e7eb;
+    --success: #10b981;
+    --error: #ef4444;
 }
+
+/* --- RESET & BASE --- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
     font-family: 'Inter', sans-serif;
-    background-color: #f0f2f5;
-    color: #1a1a1a;
-    max-width: 800px;
-    margin: 16px auto;
+    background-color: var(--bg);
+    color: var(--text);
     min-height: 100vh;
-    
-    background-image: url('images/background.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-}
-.hidden { display: none !important; }
-
-/* --- 2. Buttons --- */
-.primary-btn, .secondary-btn {
-    display: inline-block;
-    width: 100%;
-    padding: 16px;
-    border: none;
-    border-radius: 30px;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-}
-.primary-btn {
-    background-color: #1a1a1a;
-    color: #fff;
-}
-.primary-btn:hover:not(:disabled) { background-color: #333; }
-.primary-btn:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-.secondary-btn {
-    background-color: #e0e0e0;
-    color: #333;
-    border: 1px solid #ccc;
-}
-.secondary-btn:hover:not(:disabled) { background-color: #d0d0d0; }
-.secondary-btn:disabled {
-    background-color: #f0f0f0;
-    color: #aaa;
-    cursor: not-allowed;
+    background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+    background-size: 24px 24px;
 }
 
-/* --- 3. App Layout --- */
+/* --- LAYOUT --- */
 .app-container {
-    background-color: #fff; 
-    box-shadow: 0 0 20px rgba(0,0,0,0.1);
-    min-height: 100vh;
-    border-radius: 16px;
+    max-width: 900px;
+    margin: 2rem auto;
+    background: var(--surface);
+    border-radius: 24px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     overflow: hidden;
 }
-.app-header {
-    padding: 16px 24px;
-    border-bottom: 1px solid #e0e0e0;
-    background-color: rgba(255, 255, 255, 0.9); 
-}
-.logo { 
-    height: 60px; /* MODIFIED: Was 50px */
-    width: auto; 
-}
-.app-main { padding: 16px 24px; } /* MODIFIED: Reduced top/bottom padding */
-.setup-step { margin-bottom: 20px; } /* MODIFIED: Was 32px */
-h3 { margin-bottom: 12px; font-weight: 700; }
 
-/* --- 4. Modals --- */
-.modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 1000;
+header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(10px);
 }
-.modal-content {
-    background-color: #fff; padding: 30px; border-radius: 8px;
-    text-align: center; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    margin: 20px;
+.logo { font-weight: 900; font-size: 1.5rem; letter-spacing: -0.02em; }
+.logo span { color: var(--accent); }
+.reset-link { color: var(--text-light); text-decoration: none; font-size: 0.9rem; }
+
+main { padding: 2rem; }
+
+/* --- TABS (UPLOAD vs CAMERA) --- */
+.tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
 }
-.modal-content h2 { margin-top: 0; margin-bottom: 12px; }
-.modal-content p { margin-bottom: 20px; color: #555; }
-.modal-content input[type="text"] {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    margin-bottom: 12px;
+.tab-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: none;
+    font-weight: 600;
+    color: var(--text-light);
+    cursor: pointer;
+    position: relative;
 }
-.modal-content button {
-    width: 100%;
-    margin-top: 8px;
+.tab-btn.active { color: var(--accent); }
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
 }
 
-/* --- 5. Drag and Drop Zone --- */
-.drop-zone {
-    width: 100%;
-    height: 200px; /* MODIFIED: Was 250px */
-    border: 2px dashed #ccc;
+/* --- DROP ZONE --- */
+.input-area {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.2s;
+    background: #f9fafb;
+    position: relative;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+.input-area.drag-over {
+    border-color: var(--accent);
+    background: #eef2ff;
+}
+.input-area img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
     border-radius: 8px;
+}
+.icon-upload { color: var(--text-light); margin-bottom: 1rem; }
+.font-bold { font-weight: 600; }
+.text-sm-light { font-size: 0.85rem; color: var(--text-light); }
+
+/* --- CAMERA INTERFACE --- */
+.camera-container { padding: 0; background: black; }
+.camera-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
-    cursor: pointer;
-    background-color: #f9f9f9;
-    transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden; 
 }
-.drop-zone.drag-over {
-    border-color: #007bff;
-    background-color: #f0f8ff;
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1); /* Mirror effect */
 }
-#drop-zone-prompt {
-    color: #888;
-    text-align: center;
-    padding: 20px;
-}
-#person-preview {
+.face-canvas {
     position: absolute;
     top: 0; left: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    transform: scaleX(-1);
 }
 
-/* --- 6. Product Queue --- */
-.product-queue {
+/* GUIDE BOX OVERLAY */
+.guide-box {
+    position: absolute;
+    width: 220px;
+    height: 280px;
+    border: 2px dashed rgba(255, 255, 255, 0.5);
+    border-radius: 100px; /* Oval shape for face */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -60%); /* Shift slightly up */
+    pointer-events: none;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4); /* Dim background outside */
+    z-index: 5;
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    min-height: 80px; /* MODIFIED: Was 100px */
-    border: 1px solid #eee;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 16px;
+    align-items: flex-end;
+    justify-content: center;
 }
-.product-thumbnail {
-    width: 100px;
-    height: 100px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
+.guide-label {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.8rem;
+    margin-bottom: -25px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.camera-controls {
+    position: absolute;
+    bottom: 1rem;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    z-index: 10;
+}
+.capture-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: white;
+    border: 4px solid rgba(255,255,255,0.3);
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.capture-btn:active { transform: scale(0.95); }
+
+.face-alert {
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    z-index: 10;
+}
+.face-status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--error);
+}
+.face-status-dot.detected { background: var(--success); }
+
+/* --- PRODUCT LIST --- */
+.product-section { margin-top: 2rem; }
+.product-section h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.product-card {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    border: 1px solid var(--border);
     position: relative;
     overflow: hidden;
+    background: white;
 }
-.product-thumbnail img {
-    width: 100%; height: 100%;
-    object-fit: cover;
+.product-card img {
+    width: 100%; height: 100%; object-fit: cover;
 }
-.product-thumbnail .remove-btn {
+.remove-btn {
     position: absolute;
-    top: 2px; right: 2px;
-    width: 20px; height: 20px;
-    background-color: rgba(0,0,0,0.7);
+    top: 4px; right: 4px;
+    background: rgba(0,0,0,0.5);
     color: white;
     border: none;
     border-radius: 50%;
+    width: 24px; height: 24px;
     cursor: pointer;
-    font-weight: bold;
-    line-height: 20px;
-    padding: 0;
-}
-
-/* --- 7. Results Carousel --- */
-.carousel-container {
-    overflow-x: auto;
-    padding-bottom: 10px;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-}
-.carousel-slider {
-    display: flex;
-    gap: 16px;
-    padding: 16px;
-    scroll-snap-type: x mandatory;
-}
-.carousel-item {
-    flex: 0 0 80%; 
-    max-width: 400px;
-    border-radius: 8px;
-    overflow: hidden;
-    scroll-snap-align: center;
-}
-.carousel-item img {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 4 / 5;
-    object-fit: cover;
-    display: block;
-}
-/* MODIFIED: Changed .primary-btn to .button-group */
-.results-buttons {
-    margin-top: 24px;
-    border-top: 1px solid #eee;
-    padding-top: 24px;
-}
-/* ADDED: Layout for side-by-side Share/Start Over buttons */
-.results-buttons {
-    display: flex;
-    gap: 12px;
-}
-.results-buttons button {
-    width: 100%;
-    margin: 0;
-}
-
-/* --- 8. Messages --- */
-.error-message { color: #d9534f; font-weight: bold; margin-top: 16px; text-align: center; }
-.loading-message { color: #007bff; font-weight: bold; margin-top: 16px; text-align: center; }
-
-/* --- 9. Best Results Section --- */
-.best-results {
-    margin-bottom: 16px; /* MODIFIED: Was 24px */
-    text-align: center;
-}
-.best-results h4 {
-    font-size: 1rem;
-    font-weight: 700;
-    margin-bottom: 12px;
-    color: #333;
-}
-.best-results ul {
-    list-style: none;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); 
-    grid-auto-flow: row;
-    gap: 6px; /* MODIFIED: Was 8px */
-    font-size: 0.75rem; /* MODIFIED: Was 0.8rem */
-    color: #555;
-    max-width: 450px; /* MODIFIED: Was 500px */
-    margin: 0 auto;
-}
-.best-results li {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #f8f8f8;
-    border: 1px solid #eee;
-    border-radius: 20px;
-    padding: 4px 8px; /* MODIFIED: Was 6px 10px */
 }
-.best-results .icon {
-    color: #007bff; 
-    font-weight: bold;
-    margin-right: 6px;
-    font-size: 0.7rem;
+.add-product-card {
+    border: 2px dashed var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: all 0.2s;
+}
+.add-product-card:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.plus-icon { font-size: 2rem; }
+.add-text { font-size: 0.8rem; }
+
+/* --- RESULTS CAROUSEL --- */
+.results-section { margin-top: 2rem; }
+.results-section h3 { font-size: 1.1rem; margin-bottom: 1rem; }
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+.result-card {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    background: white;
+    position: relative;
+    animation: fadeIn 0.5s ease;
+}
+.result-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+.spinner {
+    width: 24px; height: 24px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
-/* --- 10. Button Group Wrapper --- */
-.button-group {
-    margin-top: 16px; /* MODIFIED: Was 24px */
-    border-top: 1px solid #eee;
-    padding-top: 16px; /* MODIFIED: Was 24px */
+/* --- BUTTONS --- */
+.btn {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 12px;
+    border: none;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 1.5rem;
 }
-.button-group #generate-btn {
-    margin-bottom: 12px;
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    font-weight: bold;
+}
+.btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+.btn-primary:disabled { background: var(--border); color: var(--text-light); cursor: not-allowed; }
+
+.hidden { display: none !important; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- UTILS --- */
+.tips {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #92400e;
+    display: flex;
+    gap: 0.5rem;
 }
