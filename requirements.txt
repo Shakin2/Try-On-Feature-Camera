@@ -1,0 +1,5 @@
+Flask
+google-generativeai
+google-cloud-aiplatform
+Pillow
+gunicorn

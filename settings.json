@@ -1,0 +1,6 @@
+{
+    "files.exclude": {
+        "**/.*": false
+    },
+    "git.ignoreLimitWarning": true
+}

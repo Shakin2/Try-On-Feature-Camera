@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Virtual Try-On</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div id="welcome-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Warning</h2>
+            <p>This is a demo only. No inappropriate images should be loaded.</p>
+            <button id="acknowledge-btn">Acknowledge</button>
+        </div>
+    </div>
+    
+    <div id="product-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>Start with a Product</h2>
+            <p>Paste a product image URL, or use the default.</p>
+            <input type="text" id="product-url-input" placeholder="Paste product image URL here...">
+            <button id="confirm-product-btn">Confirm</button>
+            <button id="use-default-btn" class="secondary">Use Default</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <header class="app-header">
+            <img src="{{ url_for('static', filename='images/my-logo.png') }}" alt="Your Logo" class="logo">
+        </header>
+
+        <main class="app-main">
+            
+            <div id="results-container" class="hidden">
+                <h2>Your Try-Ons</h2>
+                <div class="carousel-container">
+                    <div class="carousel-slider" id="carousel-slider">
+                        </div>
+                </div>
+                <div class="button-group results-buttons">
+                    <button id="share-btn" class="secondary-btn hidden">Share</button>
+                    <button id="start-over-btn" class="primary-btn">Start Over</button>
+                </div>
+            </div>
+
+            <div id="setup-container">
+                <div class="setup-step">
+                    <h3>1. Upload Your Photo</h3>
+                    <div id="drop-zone" class="drop-zone">
+                        <img id="person-preview" src="#" alt="Person preview" class="hidden" />
+                        <span id="drop-zone-prompt">Drag & drop your photo, or click to upload.</span>
+                    </div>
+                    <input type="file" id="person-upload" accept="image/*" class="hidden">
+                </div>
+
+                <div class="setup-step">
+                    <h3>2. Products to Try On (up to 4)</h3>
+                    <div id="product-queue" class="product-queue">
+                        </div>
+                    <button id="add-product-btn" class="secondary-btn" disabled>+ Add More Products (up to 3)</button>
+                    <input type="file" id="product-upload" accept="image/*" multiple class="hidden">
+                </div>
+                
+                <div class="best-results">
+                    <h4>For best results:</h4>
+                    <ul>
+                        <li><span class="icon">✓</span> Full body</li>
+                        <li><span class="icon">✓</span> Good Lighting</li>
+                        <li><span class="icon">✓</span> Just You</li>
+                        <li><span class="icon">✓</span> No Hands in Pockets</li>
+                        <li><span class="icon">✓</span> Fitted Clothes</li>
+                    </ul>
+                </div>
+
+                <div class="button-group">
+                    <button id="generate-btn" class="primary-btn" disabled>Generate Try-Ons</button>
+                    <button id="start-over-setup-btn" class="secondary-btn">Start Over</button>
+                    <p id="error-message" class="error-message hidden"></p>
+                    <p id="loading-message" class="loading-message hidden">
+                        Generating... This may take a moment.
+                    </p>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
