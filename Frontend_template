@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Virtual Try-On Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- Load Face API for client-side face detection -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    
+    <style>
+        /* --- CORE VARIABLES --- */
+        :root {
+            --primary: #111827;
+            --primary-hover: #374151;
+            --accent: #4f46e5;
+            --bg: #f3f4f6;
+            --surface: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        /* --- RESET & BASE --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        /* --- LAYOUT --- */
+        .app-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            background: var(--surface);
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+        }
+
+        header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(10px);
+        }
+        .logo { font-weight: 900; font-size: 1.5rem; letter-spacing: -0.02em; }
+        .logo span { color: var(--accent); }
+
+        main { padding: 2rem; }
+
+        /* --- TABS (UPLOAD vs CAMERA) --- */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: none;
+            font-weight: 600;
+            color: var(--text-light);
+            cursor: pointer;
+            position: relative;
+        }
+        .tab-btn.active { color: var(--accent); }
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; left: 0; right: 0;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        /* --- DROP ZONE --- */
+        .input-area {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.2s;
+            background: #f9fafb;
+            position: relative;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .input-area.drag-over {
+            border-color: var(--accent);
+            background: #eef2ff;
+        }
+        .input-area img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        /* --- CAMERA INTERFACE --- */
+        .camera-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+        .face-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            transform: scaleX(-1);
+        }
+        .camera-controls {
+            position: absolute;
+            bottom: 1rem;
+            left: 0; right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            z-index: 10;
+        }
+        .capture-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .capture-btn:active { transform: scale(0.95); }
+        .face-alert {
+            position: absolute;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 10;
+        }
+        .face-status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--error);
+        }
+        .face-status-dot.detected { background: var(--success); }
+
+        /* --- PRODUCT LIST --- */
+        .product-section { margin-top: 2rem; }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .product-card {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            background: white;
+        }
+        .product-card img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .remove-btn {
+            position: absolute;
+            top: 4px; right: 4px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px; height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .add-product-card {
+            border: 2px dashed var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .add-product-card:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* --- RESULTS CAROUSEL --- */
+        .results-section { margin-top: 2rem; }
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .result-card {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background: white;
+            position: relative;
+            animation: fadeIn 0.5s ease;
+        }
+        .result-card img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+        .spinner {
+            width: 24px; height: 24px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: none;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1.5rem;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+        .btn-primary:disabled { background: var(--border); color: var(--text-light); cursor: not-allowed; }
+
+        .hidden { display: none !important; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- UTILS --- */
+        .tips {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: #92400e;
+            display: flex;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <div class="logo">TryOn<span>AI</span></div>
+            <div>
+                <a href="#" onclick="location.reload()" style="color: var(--text-light); text-decoration: none; font-size: 0.9rem;">Reset</a>
+            </div>
+        </header>
+
+        <main>
+            <!-- STEP 1: PERSON INPUT -->
+            <section id="step-person">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('upload')">Upload Photo</button>
+                    <button class="tab-btn" onclick="switchTab('camera')">Use Camera</button>
+                </div>
+
+                <!-- Upload Mode -->
+                <div id="upload-mode" class="input-area" onclick="document.getElementById('person-file').click()">
+                    <input type="file" id="person-file" accept="image/*" class="hidden" onchange="handlePersonFile(this.files[0])">
+                    <div id="upload-placeholder">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-light); margin-bottom: 1rem;"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        <p style="font-weight: 600;">Click to upload or drag & drop</p>
+                        <p style="font-size: 0.85rem; color: var(--text-light);">Full body shots work best</p>
+                    </div>
+                    <img id="person-preview" class="hidden" />
+                </div>
+
+                <!-- Camera Mode -->
+                <div id="camera-mode" class="input-area hidden" style="padding: 0; background: black;">
+                    <div class="camera-wrapper">
+                        <video id="webcam" autoplay playsinline muted></video>
+                        <canvas id="face-overlay" class="face-canvas"></canvas>
+                        
+                        <div class="face-alert">
+                            <div id="face-dot" class="face-status-dot"></div>
+                            <span id="face-text">Initializing Face ID...</span>
+                        </div>
+
+                        <div class="camera-controls">
+                            <button id="capture-btn" class="capture-btn" onclick="takePhoto()"></button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tips">
+                    <span>💡</span>
+                    <span><strong>Tip:</strong> For "Preserve Face" accuracy, ensure good lighting and that the face is clearly visible without obstruction.</span>
+                </div>
+            </section>
+
+            <!-- STEP 2: PRODUCTS -->
+            <section class="product-section">
+                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Select Products (Max 4)</h3>
+                <div class="product-grid" id="product-list">
+                    <!-- Products added here via JS -->
+                    <div class="product-card add-product-card" onclick="document.getElementById('product-file').click()">
+                        <span style="font-size: 2rem;">+</span>
+                        <span style="font-size: 0.8rem;">Add</span>
+                    </div>
+                </div>
+                <input type="file" id="product-file" accept="image/*" multiple class="hidden" onchange="handleProductFiles(this.files)">
+            </section>
+
+            <!-- ACTIONS -->
+            <button id="generate-btn" class="btn btn-primary" disabled onclick="generateAll()">Generate Try-Ons</button>
+
+            <!-- STEP 3: RESULTS -->
+            <section id="results-area" class="results-section hidden">
+                <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Your Results</h3>
+                <div class="results-grid" id="results-grid">
+                    <!-- Results populate here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // --- STATE ---
+        let personImage = null;
+        let products = [];
+        const MAX_PRODUCTS = 4;
+        let isCameraActive = false;
+        let modelsLoaded = false;
+
+        // --- INIT ---
+        window.onload = async () => {
+            // Load Face API Models
+            try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+                modelsLoaded = true;
+                console.log("Face models loaded");
+                updateFaceStatus(false, "Ready");
+            } catch (e) {
+                console.error("Error loading face models", e);
+            }
+        };
+
+        // --- TABS ---
+        function switchTab(mode) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (mode === 'camera') {
+                document.getElementById('upload-mode').classList.add('hidden');
+                document.getElementById('camera-mode').classList.remove('hidden');
+                startCamera();
+            } else {
+                document.getElementById('camera-mode').classList.add('hidden');
+                document.getElementById('upload-mode').classList.remove('hidden');
+                stopCamera();
+            }
+        }
+
+        // --- CAMERA & FACE LOGIC ---
+        async function startCamera() {
+            const video = document.getElementById('webcam');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                video.srcObject = stream;
+                isCameraActive = true;
+                detectFaces();
+            } catch (err) {
+                alert("Camera access denied. Please allow camera permissions.");
+            }
+        }
+
+        function stopCamera() {
+            const video = document.getElementById('webcam');
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            isCameraActive = false;
+        }
+
+        async function detectFaces() {
+            const video = document.getElementById('webcam');
+            const canvas = document.getElementById('face-overlay');
+            const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+            
+            faceapi.matchDimensions(canvas, displaySize);
+
+            setInterval(async () => {
+                if (!isCameraActive || !modelsLoaded) return;
+
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+                const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Flip for mirror effect
+                ctx.save();
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+
+                if (resizedDetections.length > 0) {
+                    // Face Found
+                    faceapi.draw.drawDetections(canvas, resizedDetections);
+                    updateFaceStatus(true, "Face Detected - Good to Snap");
+                    document.getElementById('capture-btn').style.borderColor = '#10b981'; // Green border
+                } else {
+                    updateFaceStatus(false, "No Face Detected");
+                    document.getElementById('capture-btn').style.borderColor = 'rgba(255,255,255,0.3)';
+                }
+                ctx.restore();
+            }, 200);
+        }
+
+        function updateFaceStatus(detected, text) {
+            const dot = document.getElementById('face-dot');
+            const label = document.getElementById('face-text');
+            
+            if (detected) {
+                dot.classList.add('detected');
+                label.style.color = '#10b981';
+            } else {
+                dot.classList.remove('detected');
+                label.style.color = 'white';
+            }
+            label.textContent = text;
+        }
+
+        function takePhoto() {
+            const video = document.getElementById('webcam');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            
+            // Flip horizontal to match mirror view
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0);
+
+            canvas.toBlob(blob => {
+                const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
+                handlePersonFile(file);
+                switchTab('upload'); // Switch back to show result
+            }, 'image/jpeg', 0.9);
+        }
+
+        // --- FILE HANDLING ---
+        function handlePersonFile(file) {
+            if (!file) return;
+            personImage = file;
+            
+            const preview = document.getElementById('person-preview');
+            const placeholder = document.getElementById('upload-placeholder');
+            
+            preview.src = URL.createObjectURL(file);
+            preview.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            
+            checkReady();
+        }
+
+        function handleProductFiles(files) {
+            const remaining = MAX_PRODUCTS - products.length;
+            const toAdd = Array.from(files).slice(0, remaining);
+            
+            products = [...products, ...toAdd];
+            renderProducts();
+            checkReady();
+            document.getElementById('product-file').value = ''; // Reset
+        }
+
+        function removeProduct(index) {
+            products.splice(index, 1);
+            renderProducts();
+            checkReady();
+        }
+
+        function renderProducts() {
+            const list = document.getElementById('product-list');
+            // Clear existing product cards (keep the add button)
+            const cards = list.querySelectorAll('.product-card:not(.add-product-card)');
+            cards.forEach(c => c.remove());
+
+            products.forEach((file, index) => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <img src="${URL.createObjectURL(file)}" alt="Product">
+                    <button class="remove-btn" onclick="removeProduct(${index})">&times;</button>
+                `;
+                list.insertBefore(card, list.lastElementChild);
+            });
+
+            // Hide add button if full
+            const addBtn = list.querySelector('.add-product-card');
+            if (products.length >= MAX_PRODUCTS) addBtn.style.display = 'none';
+            else addBtn.style.display = 'flex';
+        }
+
+        function checkReady() {
+            const btn = document.getElementById('generate-btn');
+            btn.disabled = !(personImage && products.length > 0);
+        }
+
+        // --- GENERATION LOGIC (PARALLEL) ---
+        async function generateAll() {
+            const btn = document.getElementById('generate-btn');
+            btn.disabled = true;
+            btn.textContent = "Processing...";
+            
+            const resultsArea = document.getElementById('results-area');
+            resultsArea.classList.remove('hidden');
+            const grid = document.getElementById('results-grid');
+            grid.innerHTML = ''; // Clear previous
+
+            // Create placeholders
+            const placeholders = products.map((_, i) => {
+                const div = document.createElement('div');
+                div.className = 'result-card';
+                div.style.aspectRatio = "4/5";
+                div.innerHTML = `
+                    <div class="loading-overlay">
+                        <div class="spinner"></div>
+                        <span>Generating Look ${i + 1}...</span>
+                    </div>
+                `;
+                grid.appendChild(div);
+                return div;
+            });
+
+            // Launch all requests in parallel
+            // We map each product to a fetch promise
+            const promises = products.map(async (productFile, index) => {
+                const formData = new FormData();
+                formData.append('person_upload', personImage);
+                formData.append('product_upload', productFile);
+
+                try {
+                    const response = await fetch('/combine', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) throw new Error('Failed');
+
+                    const blob = await response.blob();
+                    const imgUrl = URL.createObjectURL(blob);
+                    
+                    // Replace placeholder with image immediately
+                    const card = placeholders[index];
+                    card.innerHTML = `<img src="${imgUrl}" alt="Result ${index + 1}">`;
+                    
+                } catch (err) {
+                    const card = placeholders[index];
+                    card.innerHTML = `
+                        <div class="loading-overlay" style="background: #fef2f2; color: var(--error);">
+                            <span>Error generating.</span>
+                        </div>
+                    `;
+                }
+            });
+
+            // Wait for all (just to reset button state)
+            await Promise.all(promises);
+            btn.disabled = false;
+            btn.textContent = "Generate Try-Ons";
+        }
+    </script>
+</body>
+</html>
