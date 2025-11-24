@@ -3,93 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Virtual Try-On</title>
+    <title>AI Virtual Try-On Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Link to your static CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <!-- Load Face API for client-side face detection -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 </head>
 <body>
 
-    <div id="welcome-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h2>Warning</h2>
-            <p>This is a demo only. No inappropriate images should be loaded.</p>
-            <button id="acknowledge-btn">Acknowledge</button>
-        </div>
-    </div>
-    
-    <div id="product-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h2>Start with a Product</h2>
-            <p>Paste a product image URL, or use the default.</p>
-            <input type="text" id="product-url-input" placeholder="Paste product image URL here...">
-            <button id="confirm-product-btn">Confirm</button>
-            <button id="use-default-btn" class="secondary">Use Default</button>
-        </div>
-    </div>
-
     <div class="app-container">
-        <header class="app-header">
-            <img src="{{ url_for('static', filename='images/my-logo.png') }}" alt="Your Logo" class="logo">
+        <header>
+            <div class="logo">TryOn<span>AI</span></div>
+            <div>
+                <a href="#" onclick="location.reload()" class="reset-link">Reset</a>
+            </div>
         </header>
 
-        <main class="app-main">
-            
-            <div id="results-container" class="hidden">
-                <h2>Your Try-Ons</h2>
-                <div class="carousel-container">
-                    <div class="carousel-slider" id="carousel-slider">
-                        </div>
+        <main>
+            <!-- STEP 1: PERSON INPUT -->
+            <section id="step-person">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('upload')">Upload Photo</button>
+                    <button class="tab-btn" onclick="switchTab('camera')">Use Camera</button>
                 </div>
-                <div class="button-group results-buttons">
-                    <button id="share-btn" class="secondary-btn hidden">Share</button>
-                    <button id="start-over-btn" class="primary-btn">Start Over</button>
-                </div>
-            </div>
 
-            <div id="setup-container">
-                <div class="setup-step">
-                    <h3>1. Upload Your Photo</h3>
-                    <div id="drop-zone" class="drop-zone">
-                        <img id="person-preview" src="#" alt="Person preview" class="hidden" />
-                        <span id="drop-zone-prompt">Drag & drop your photo, or click to upload.</span>
+                <!-- Upload Mode -->
+                <div id="upload-mode" class="input-area" onclick="document.getElementById('person-file').click()">
+                    <input type="file" id="person-file" accept="image/*" class="hidden" onchange="handlePersonFile(this.files[0])">
+                    <div id="upload-placeholder">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-upload"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        <p class="font-bold">Click to upload or drag & drop</p>
+                        <p class="text-sm-light">Full body shots work best</p>
                     </div>
-                    <input type="file" id="person-upload" accept="image/*" class="hidden">
+                    <img id="person-preview" class="hidden" />
                 </div>
 
-                <div class="setup-step">
-                    <h3>2. Products to Try On (up to 4)</h3>
-                    <div id="product-queue" class="product-queue">
+                <!-- Camera Mode -->
+                <div id="camera-mode" class="input-area hidden camera-container">
+                    <div class="camera-wrapper">
+                        <video id="webcam" autoplay playsinline muted></video>
+                        <canvas id="face-overlay" class="face-canvas"></canvas>
+                        
+                        <!-- VISUAL GUIDE BOX -->
+                        <div class="guide-box">
+                            <span class="guide-label">Position Face Here</span>
                         </div>
-                    <button id="add-product-btn" class="secondary-btn" disabled>+ Add More Products (up to 3)</button>
-                    <input type="file" id="product-upload" accept="image/*" multiple class="hidden">
+
+                        <div class="face-alert">
+                            <div id="face-dot" class="face-status-dot"></div>
+                            <span id="face-text">Initializing Face ID...</span>
+                        </div>
+
+                        <div class="camera-controls">
+                            <button id="capture-btn" class="capture-btn" onclick="takePhoto()"></button>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="best-results">
-                    <h4>For best results:</h4>
-                    <ul>
-                        <li><span class="icon">✓</span> Full body</li>
-                        <li><span class="icon">✓</span> Good Lighting</li>
-                        <li><span class="icon">✓</span> Just You</li>
-                        <li><span class="icon">✓</span> No Hands in Pockets</li>
-                        <li><span class="icon">✓</span> Fitted Clothes</li>
-                    </ul>
+                <div class="tips">
+                    <span>💡</span>
+                    <span><strong>Tip:</strong> For "Preserve Face" accuracy, ensure good lighting and that the face is clearly visible without obstruction.</span>
                 </div>
+            </section>
 
-                <div class="button-group">
-                    <button id="generate-btn" class="primary-btn" disabled>Generate Try-Ons</button>
-                    <button id="start-over-setup-btn" class="secondary-btn">Start Over</button>
-                    <p id="error-message" class="error-message hidden"></p>
-                    <p id="loading-message" class="loading-message hidden">
-                        Generating... This may take a moment.
-                    </p>
+            <!-- STEP 2: PRODUCTS -->
+            <section class="product-section">
+                <h3>Select Products (Max 4)</h3>
+                <div class="product-grid" id="product-list">
+                    <!-- Products added here via JS -->
+                    <div class="product-card add-product-card" onclick="document.getElementById('product-file').click()">
+                        <span class="plus-icon">+</span>
+                        <span class="add-text">Add</span>
+                    </div>
                 </div>
+                <input type="file" id="product-file" accept="image/*" multiple class="hidden" onchange="handleProductFiles(this.files)">
+            </section>
 
-            </div>
+            <!-- ACTIONS -->
+            <button id="generate-btn" class="btn btn-primary" disabled onclick="generateAll()">Generate Try-Ons</button>
+
+            <!-- STEP 3: RESULTS -->
+            <section id="results-area" class="results-section hidden">
+                <h3>Your Results</h3>
+                <div class="results-grid" id="results-grid">
+                    <!-- Results populate here -->
+                </div>
+            </section>
         </main>
     </div>
 
+    <!-- Link to your static JS -->
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
